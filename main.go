@@ -1,16 +1,19 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"math"
+)
 
 type Value struct {
-	Data  float32
-	Grad  float32
+	Data  float64
+	Grad  float64
 	Label string
 	Op    string
 	Prev  []*Value
 }
 
-func NewValue(data float32, label string) *Value {
+func NewValue(data float64, label string) *Value {
 	value := &Value{
 		Data:  data,
 		Grad:  0.0,
@@ -58,6 +61,14 @@ func (v1 Value) SubValue(v2 *Value) *Value {
 	return out
 }
 
+func (v1 Value) PowValue(v2 *Value) *Value {
+	out := NewValue(float64(math.Pow(v1.Data, v2.Data)), "")
+	out.Op = "**"
+	out.Prev = []*Value{&v1, v2}
+
+	return out
+}
+
 func main() {
 	x1 := NewValue(2.0, "x1")
 	w1 := NewValue(-3.0, "w1")
@@ -65,5 +76,6 @@ func main() {
 	x1w1 := x1.MulValue(w1)
 	x1w1.Label = "x1*w1"
 
-	x1w1.NegValue().PrintValue()
+	x2w2 := NewValue(2.0, "x2w2")
+	x1w1.PowValue(x2w2).PrintValue()
 }

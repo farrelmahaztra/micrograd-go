@@ -9,16 +9,30 @@ type Value struct {
 	Data  float64
 	Grad  float64
 	Label string
-	Op    string
+	Op    Operation
 	Prev  []*Value
 }
+
+type Operation int64
+
+const (
+	Nil Operation = iota
+	Add
+	Mul
+	Neg
+	Sub
+	Pow
+	Div
+	Tanh
+	Exp
+)
 
 func NewValue(data float64, label string) *Value {
 	value := &Value{
 		Data:  data,
 		Grad:  0.0,
 		Label: label,
-		Op:    "",
+		Op:    Nil,
 		Prev:  nil,
 	}
 
@@ -31,7 +45,7 @@ func (v Value) Print() {
 
 func (v1 Value) Add(v2 *Value) *Value {
 	out := NewValue(v1.Data+v2.Data, "")
-	out.Op = "+"
+	out.Op = Add
 	out.Prev = []*Value{&v1, v2}
 
 	return out
@@ -39,7 +53,7 @@ func (v1 Value) Add(v2 *Value) *Value {
 
 func (v1 Value) Mul(v2 *Value) *Value {
 	out := NewValue(v1.Data*v2.Data, "")
-	out.Op = "*"
+	out.Op = Mul
 	out.Prev = []*Value{&v1, v2}
 
 	return out
@@ -48,7 +62,7 @@ func (v1 Value) Mul(v2 *Value) *Value {
 func (v1 Value) Neg() *Value {
 	v2 := NewValue(-1, "")
 	out := NewValue(v1.Data*v2.Data, "")
-	out.Op = "*-1"
+	out.Op = Neg
 	out.Prev = []*Value{&v1, v2}
 
 	return out
@@ -56,14 +70,14 @@ func (v1 Value) Neg() *Value {
 
 func (v1 Value) Sub(v2 *Value) *Value {
 	out := v1.Add(v2.Neg())
-	out.Op = "-"
+	out.Op = Sub
 
 	return out
 }
 
 func (v1 Value) Pow(v2 float64) *Value {
 	out := NewValue(float64(math.Pow(v1.Data, v2)), "")
-	out.Op = "**"
+	out.Op = Pow
 	out.Prev = []*Value{&v1}
 
 	return out
@@ -71,7 +85,7 @@ func (v1 Value) Pow(v2 float64) *Value {
 
 func (v1 Value) Div(v2 *Value) *Value {
 	out := NewValue(v1.Data*v2.Pow(-1).Data, "")
-	out.Op = "/"
+	out.Op = Div
 	out.Prev = []*Value{&v1, v2}
 
 	return out
@@ -81,7 +95,7 @@ func (v Value) Tanh() *Value {
 	x := v.Data
 	t := (math.Exp(2*x) - 1) / (math.Exp(2*x) + 1)
 	out := NewValue(t, "")
-	out.Op = "tanh"
+	out.Op = Tanh
 	out.Prev = []*Value{&v}
 
 	return out
@@ -90,18 +104,38 @@ func (v Value) Tanh() *Value {
 func (v Value) Exp() *Value {
 	x := v.Data
 	out := NewValue(math.Exp(x), "")
-	out.Op = "e^"
+	out.Op = Exp
 	out.Prev = []*Value{&v}
 
 	return out
 }
 
 func main() {
-	x1 := NewValue(1, "x1")
-	w1 := NewValue(1.5, "w1")
+	h := 0.0001
 
-	x1w1 := x1.Mul(w1)
-	x1w1.Label = "x1*w1"
+	a := NewValue(2.0, "a")
+	b := NewValue(-3.0, "b")
+	c := NewValue(10.0, "c")
+	e := a.Mul(b)
+	e.Label = "e"
+	d := e.Add(c)
+	d.Label = "d"
+	f := NewValue(-2.0, "f")
+	L := d.Mul(f)
+	L.Label = "L"
+	L1 := L.Data
 
-	x1w1.Exp().Print()
+	a = NewValue(2.0, "a")
+	b = NewValue(-3.0, "b")
+	c = NewValue(10.0, "c")
+	e = a.Mul(b)
+	e.Label = "e"
+	d = e.Add(c)
+	d.Label = "d"
+	f = NewValue(-2.0, "f")
+	L = d.Mul(f)
+	L.Label = "L"
+	L2 := L.Data + h
+
+	fmt.Println((L2 - L1) / h)
 }

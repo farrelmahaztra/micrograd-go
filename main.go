@@ -61,9 +61,17 @@ func (v1 Value) SubValue(v2 *Value) *Value {
 	return out
 }
 
-func (v1 Value) PowValue(v2 *Value) *Value {
-	out := NewValue(float64(math.Pow(v1.Data, v2.Data)), "")
+func (v1 Value) PowValue(v2 float64) *Value {
+	out := NewValue(float64(math.Pow(v1.Data, v2)), "")
 	out.Op = "**"
+	out.Prev = []*Value{&v1}
+
+	return out
+}
+
+func (v1 Value) DivValue(v2 *Value) *Value {
+	out := NewValue(v1.Data*v2.PowValue(-1).Data, "")
+	out.Op = "/"
 	out.Prev = []*Value{&v1, v2}
 
 	return out
@@ -76,6 +84,6 @@ func main() {
 	x1w1 := x1.MulValue(w1)
 	x1w1.Label = "x1*w1"
 
-	x2w2 := NewValue(2.0, "x2w2")
-	x1w1.PowValue(x2w2).PrintValue()
+	x2w2 := NewValue(4, "")
+	x1w1.DivValue(x2w2).PrintValue()
 }

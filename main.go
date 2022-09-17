@@ -25,11 +25,11 @@ func NewValue(data float64, label string) *Value {
 	return value
 }
 
-func (v Value) PrintValue() {
+func (v Value) Print() {
 	fmt.Printf("Value(data=%f)\n", v.Data)
 }
 
-func (v1 Value) AddValue(v2 *Value) *Value {
+func (v1 Value) Add(v2 *Value) *Value {
 	out := NewValue(v1.Data+v2.Data, "")
 	out.Op = "+"
 	out.Prev = []*Value{&v1, v2}
@@ -37,7 +37,7 @@ func (v1 Value) AddValue(v2 *Value) *Value {
 	return out
 }
 
-func (v1 Value) MulValue(v2 *Value) *Value {
+func (v1 Value) Mul(v2 *Value) *Value {
 	out := NewValue(v1.Data*v2.Data, "")
 	out.Op = "*"
 	out.Prev = []*Value{&v1, v2}
@@ -45,7 +45,7 @@ func (v1 Value) MulValue(v2 *Value) *Value {
 	return out
 }
 
-func (v1 Value) NegValue() *Value {
+func (v1 Value) Neg() *Value {
 	v2 := NewValue(-1, "")
 	out := NewValue(v1.Data*v2.Data, "")
 	out.Op = "*-1"
@@ -54,14 +54,14 @@ func (v1 Value) NegValue() *Value {
 	return out
 }
 
-func (v1 Value) SubValue(v2 *Value) *Value {
-	out := v1.AddValue(v2.NegValue())
+func (v1 Value) Sub(v2 *Value) *Value {
+	out := v1.Add(v2.Neg())
 	out.Op = "-"
 
 	return out
 }
 
-func (v1 Value) PowValue(v2 float64) *Value {
+func (v1 Value) Pow(v2 float64) *Value {
 	out := NewValue(float64(math.Pow(v1.Data, v2)), "")
 	out.Op = "**"
 	out.Prev = []*Value{&v1}
@@ -69,8 +69,8 @@ func (v1 Value) PowValue(v2 float64) *Value {
 	return out
 }
 
-func (v1 Value) DivValue(v2 *Value) *Value {
-	out := NewValue(v1.Data*v2.PowValue(-1).Data, "")
+func (v1 Value) Div(v2 *Value) *Value {
+	out := NewValue(v1.Data*v2.Pow(-1).Data, "")
 	out.Op = "/"
 	out.Prev = []*Value{&v1, v2}
 
@@ -100,8 +100,8 @@ func main() {
 	x1 := NewValue(1, "x1")
 	w1 := NewValue(1.5, "w1")
 
-	x1w1 := x1.MulValue(w1)
+	x1w1 := x1.Mul(w1)
 	x1w1.Label = "x1*w1"
 
-	x1w1.Exp().PrintValue()
+	x1w1.Exp().Print()
 }

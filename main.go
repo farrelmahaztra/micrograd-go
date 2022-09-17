@@ -11,7 +11,7 @@ type Value struct {
 	Label     string
 	Op        Operation
 	Prev      []*Value
-	_Backward func()
+	_Backward func(out *Value)
 }
 
 type Operation int64
@@ -35,7 +35,7 @@ func NewValue(data float64, label string) *Value {
 		Label:     label,
 		Op:        Nil,
 		Prev:      nil,
-		_Backward: func() {},
+		_Backward: func(out *Value) {},
 	}
 
 	return value
@@ -50,7 +50,7 @@ func (v1 Value) Add(v2 *Value) *Value {
 	out.Op = Add
 	out.Prev = []*Value{&v1, v2}
 
-	out._Backward = func() {
+	out._Backward = func(out *Value) {
 		(&v1).Grad += 1.0 * out.Grad
 		v2.Grad += 1.0 * out.Grad
 	}
@@ -63,7 +63,7 @@ func (v1 Value) Mul(v2 *Value) *Value {
 	out.Op = Mul
 	out.Prev = []*Value{&v1, v2}
 
-	out._Backward = func() {
+	out._Backward = func(out *Value) {
 		(&v1).Grad += v2.Data * out.Grad
 		v2.Grad += v1.Data * out.Grad
 	}
@@ -92,7 +92,7 @@ func (v1 Value) Pow(v2 *Value) *Value {
 	out.Op = Pow
 	out.Prev = []*Value{&v1, v2}
 
-	out._Backward = func() {
+	out._Backward = func(out *Value) {
 		(&v1).Grad += (v2.Data * math.Pow(v1.Data, v2.Data-1)) * out.Grad
 		v2.Grad += (out.Data * math.Log(v1.Data)) * out.Grad
 	}
@@ -124,7 +124,7 @@ func (v Value) Exp() *Value {
 	out.Op = Exp
 	out.Prev = []*Value{&v}
 
-	out._Backward = func() {
+	out._Backward = func(out *Value) {
 		(&v).Grad += out.Data * out.Grad
 	}
 
@@ -152,8 +152,8 @@ func (v Value) Backward() {
 	BuildTopo(&v)
 
 	for i := len(topo) - 1; i >= 0; i-- {
-		topo[i]._Backward()
-		topo[i].Print()
+		fmt.Println(topo[i], &topo[i])
+		topo[i]._Backward(topo[i])
 	}
 }
 

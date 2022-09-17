@@ -115,6 +115,10 @@ func (v Value) Tanh() *Value {
 	out.Op = Tanh
 	out.Prev = []*Value{&v}
 
+	out._Backward = func(out *Value) {
+		(&v).Grad += (1 - math.Pow(t, 2)) * out.Grad
+	}
+
 	return out
 }
 
@@ -152,19 +156,39 @@ func (v Value) Backward() {
 	BuildTopo(&v)
 
 	for i := len(topo) - 1; i >= 0; i-- {
-		fmt.Println(topo[i], &topo[i])
 		topo[i]._Backward(topo[i])
+		fmt.Println(topo[i].Data, topo[i].Grad)
 	}
 }
 
 func main() {
-	a := NewValue(3, "a")
-	b := NewValue(5, "b")
-	c := a.Add(b)
-	c.Label = "c"
-	d := NewValue(2, "d")
-	e := c.Mul(d)
-	e.Label = "e"
-	e.Grad = 1.0
-	e.Backward()
+	// Inputs x1 and x2
+	x1 := NewValue(2.0, "x1")
+	x2 := NewValue(0.0, "x2")
+
+	// Weights w1 and w2
+	w1 := NewValue(-3.0, "w1")
+	w2 := NewValue(1.0, "w2")
+
+	// Bias of the neuron
+	b := NewValue(6.8813735870195432, "b")
+
+	// x1*w1 + x2*w2 + b
+	x1w1 := x1.Mul(w1)
+	x1w1.Label = "x1*w1"
+
+	x2w2 := x2.Mul(w2)
+	x2w2.Label = "x2*w2"
+
+	x1w1x2w2 := x1w1.Add(x2w2)
+	x1w1x2w2.Label = "x1*w1 + x2*w2"
+
+	n := x1w1x2w2.Add(b)
+	n.Label = "n"
+
+	o := n.Tanh()
+	o.Label = "o"
+	o.Grad = 1
+
+	o.Backward()
 }

@@ -87,6 +87,15 @@ func (v Value) Tanh() *Value {
 	return out
 }
 
+func (v Value) Exp() *Value {
+	x := v.Data
+	out := NewValue(math.Exp(x), "")
+	out.Op = "e^"
+	out.Prev = []*Value{&v}
+
+	return out
+}
+
 func main() {
 	x1 := NewValue(1, "x1")
 	w1 := NewValue(1.5, "w1")
@@ -94,5 +103,5 @@ func main() {
 	x1w1 := x1.MulValue(w1)
 	x1w1.Label = "x1*w1"
 
-	x1w1.Tanh().PrintValue()
+	x1w1.Exp().PrintValue()
 }

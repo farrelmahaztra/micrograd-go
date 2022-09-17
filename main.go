@@ -6,11 +6,12 @@ import (
 )
 
 type Value struct {
-	Data  float64
-	Grad  float64
-	Label string
-	Op    Operation
-	Prev  []*Value
+	Data     float64
+	Grad     float64
+	Label    string
+	Op       Operation
+	Prev     []*Value
+	Backward func()
 }
 
 type Operation int64
@@ -29,11 +30,12 @@ const (
 
 func NewValue(data float64, label string) *Value {
 	value := &Value{
-		Data:  data,
-		Grad:  0.0,
-		Label: label,
-		Op:    Nil,
-		Prev:  nil,
+		Data:     data,
+		Grad:     0.0,
+		Label:    label,
+		Op:       Nil,
+		Prev:     nil,
+		Backward: func() {},
 	}
 
 	return value
@@ -48,6 +50,11 @@ func (v1 Value) Add(v2 *Value) *Value {
 	out.Op = Add
 	out.Prev = []*Value{&v1, v2}
 
+	out.Backward = func() {
+		v1.Grad += 1.0 * out.Grad
+		v2.Grad += 1.0 * out.Grad
+	}
+
 	return out
 }
 
@@ -55,6 +62,11 @@ func (v1 Value) Mul(v2 *Value) *Value {
 	out := NewValue(v1.Data*v2.Data, "")
 	out.Op = Mul
 	out.Prev = []*Value{&v1, v2}
+
+	out.Backward = func() {
+		v1.Grad += v2.Data * out.Grad
+		v2.Grad += v1.Data * out.Grad
+	}
 
 	return out
 }
@@ -79,6 +91,11 @@ func (v1 Value) Pow(v2 *Value) *Value {
 	out := NewValue(float64(math.Pow(v1.Data, v2.Data)), "")
 	out.Op = Pow
 	out.Prev = []*Value{&v1, v2}
+
+	out.Backward = func() {
+		v1.Grad += (v2.Data * math.Pow(v1.Data, v2.Data-1)) * out.Grad
+		v2.Grad += (out.Data * math.Log(v1.Data)) * out.Grad
+	}
 
 	return out
 }
@@ -107,38 +124,20 @@ func (v Value) Exp() *Value {
 	out.Op = Exp
 	out.Prev = []*Value{&v}
 
-	return out
-}
-
-func (v Value) _Backward() {
-	op := v.Op
-	prev := v.Prev
-
-	switch {
-	case op == Add || op == Sub:
-		prev[0].Grad += 1.0 * v.Grad
-		prev[1].Grad += 1.0 * v.Grad
-
-	case op == Mul || op == Div:
-		prev[0].Grad += prev[1].Data * v.Grad
-		prev[1].Grad += prev[0].Data * v.Grad
-
-	case op == Pow:
-		prev[0].Grad += (prev[1].Data * math.Pow(prev[0].Data, prev[1].Data-1)) * v.Grad
-		prev[1].Grad += (v.Data * math.Log(prev[0].Data)) * v.Grad
-
-	case op == Exp:
-		prev[0].Grad += v.Data * v.Grad
+	out.Backward = func() {
+		v.Grad += out.Data * out.Grad
 	}
+
+	return out
 }
 
 func main() {
 	a := NewValue(3, "a")
 	b := NewValue(2, "b")
-	c := a.Pow(b)
+	c := a.Add(b)
 	c.Label = "c"
 	c.Grad = 1.0
-	c._Backward()
+	c.Backward()
 	fmt.Println(c.Prev[0].Grad, c.Prev[1].Grad)
 
 	//h := 0.0001

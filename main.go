@@ -51,6 +51,13 @@ func (v1 Value) NegValue() *Value {
 	return out
 }
 
+func (v1 Value) SubValue(v2 *Value) *Value {
+	out := v1.AddValue(v2.NegValue())
+	out.Op = "-"
+
+	return out
+}
+
 func main() {
 	x1 := NewValue(2.0, "x1")
 	w1 := NewValue(-3.0, "w1")

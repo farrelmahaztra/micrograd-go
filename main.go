@@ -77,13 +77,22 @@ func (v1 Value) DivValue(v2 *Value) *Value {
 	return out
 }
 
+func (v Value) Tanh() *Value {
+	x := v.Data
+	t := (math.Exp(2*x) - 1) / (math.Exp(2*x) + 1)
+	out := NewValue(t, "")
+	out.Op = "tanh"
+	out.Prev = []*Value{&v}
+
+	return out
+}
+
 func main() {
-	x1 := NewValue(2.0, "x1")
-	w1 := NewValue(-3.0, "w1")
+	x1 := NewValue(1, "x1")
+	w1 := NewValue(1.5, "w1")
 
 	x1w1 := x1.MulValue(w1)
 	x1w1.Label = "x1*w1"
 
-	x2w2 := NewValue(4, "")
-	x1w1.DivValue(x2w2).PrintValue()
+	x1w1.Tanh().PrintValue()
 }

@@ -22,6 +22,10 @@ func NewValue(data float32, label string) *Value {
 	return value
 }
 
+func (v Value) PrintValue() {
+	fmt.Printf("Value(data=%f)\n", v.Data)
+}
+
 func (v1 Value) AddValue(v2 *Value) *Value {
 	out := NewValue(v1.Data+v2.Data, "")
 	out.Op = "+"
@@ -38,8 +42,13 @@ func (v1 Value) MulValue(v2 *Value) *Value {
 	return out
 }
 
-func (v Value) PrintValue() {
-	fmt.Printf("Value(data=%f)", v.Data)
+func (v1 Value) NegValue() *Value {
+	v2 := NewValue(-1, "")
+	out := NewValue(v1.Data*v2.Data, "")
+	out.Op = "*-1"
+	out.Prev = []*Value{&v1, v2}
+
+	return out
 }
 
 func main() {
@@ -49,5 +58,5 @@ func main() {
 	x1w1 := x1.MulValue(w1)
 	x1w1.Label = "x1*w1"
 
-	x1w1.PrintValue()
+	x1w1.NegValue().PrintValue()
 }

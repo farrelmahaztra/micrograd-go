@@ -38,6 +38,10 @@ func (v1 Value) MulValue(v2 *Value) *Value {
 	return out
 }
 
+func (v Value) PrintValue() {
+	fmt.Printf("Value(data=%f)", v.Data)
+}
+
 func main() {
 	x1 := NewValue(2.0, "x1")
 	w1 := NewValue(-3.0, "w1")
@@ -45,5 +49,5 @@ func main() {
 	x1w1 := x1.MulValue(w1)
 	x1w1.Label = "x1*w1"
 
-	fmt.Println(x1w1)
+	x1w1.PrintValue()
 }

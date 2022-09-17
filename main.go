@@ -75,16 +75,16 @@ func (v1 Value) Sub(v2 *Value) *Value {
 	return out
 }
 
-func (v1 Value) Pow(v2 float64) *Value {
-	out := NewValue(float64(math.Pow(v1.Data, v2)), "")
+func (v1 Value) Pow(v2 *Value) *Value {
+	out := NewValue(float64(math.Pow(v1.Data, v2.Data)), "")
 	out.Op = Pow
-	out.Prev = []*Value{&v1}
+	out.Prev = []*Value{&v1, v2}
 
 	return out
 }
 
 func (v1 Value) Div(v2 *Value) *Value {
-	out := NewValue(v1.Data*v2.Pow(-1).Data, "")
+	out := NewValue(v1.Data*v2.Pow(NewValue(-1, "")).Data, "")
 	out.Op = Div
 	out.Prev = []*Value{&v1, v2}
 
@@ -110,32 +110,63 @@ func (v Value) Exp() *Value {
 	return out
 }
 
+func (v Value) _Backward() {
+	op := v.Op
+	prev := v.Prev
+
+	switch {
+	case op == Add || op == Sub:
+		prev[0].Grad += 1.0 * v.Grad
+		prev[1].Grad += 1.0 * v.Grad
+
+	case op == Mul || op == Div:
+		prev[0].Grad += prev[1].Data * v.Grad
+		prev[1].Grad += prev[0].Data * v.Grad
+
+	case op == Pow:
+		prev[0].Grad += (prev[1].Data * math.Pow(prev[0].Data, prev[1].Data-1)) * v.Grad
+		prev[1].Grad += (v.Data * math.Log(prev[0].Data)) * v.Grad
+
+	case op == Exp:
+		prev[0].Grad += v.Data * v.Grad
+	}
+}
+
 func main() {
-	h := 0.0001
+	a := NewValue(3, "a")
+	b := NewValue(2, "b")
+	c := a.Pow(b)
+	c.Label = "c"
+	c.Grad = 1.0
+	c._Backward()
+	fmt.Println(c.Prev[0].Grad, c.Prev[1].Grad)
 
-	a := NewValue(2.0, "a")
-	b := NewValue(-3.0, "b")
-	c := NewValue(10.0, "c")
-	e := a.Mul(b)
-	e.Label = "e"
-	d := e.Add(c)
-	d.Label = "d"
-	f := NewValue(-2.0, "f")
-	L := d.Mul(f)
-	L.Label = "L"
-	L1 := L.Data
+	//h := 0.0001
 
-	a = NewValue(2.0, "a")
-	b = NewValue(-3.0, "b")
-	c = NewValue(10.0, "c")
-	e = a.Mul(b)
-	e.Label = "e"
-	d = e.Add(c)
-	d.Label = "d"
-	f = NewValue(-2.0, "f")
-	L = d.Mul(f)
-	L.Label = "L"
-	L2 := L.Data + h
+	// a := NewValue(2.0, "a")
+	// b := NewValue(-3.0, "b")
+	// c := NewValue(10.0, "c")
+	// e := a.Mul(b)
+	// e.Label = "e"
+	// d := e.Add(c)
+	// d.Label = "d"
+	// f := NewValue(-2.0, "f")
+	// L := d.Mul(f)
+	// L.Label = "L"
+	// L1 := L.Data
 
-	fmt.Println((L2 - L1) / h)
+	// a = NewValue(2.0, "a")
+	// b = NewValue(-3.0, "b")
+	// c = NewValue(10.0, "c")
+	// e = a.Mul(b)
+	// e.Label = "e"
+	// d = e.Add(c)
+	// d.Label = "d"
+	// f = NewValue(-2.0, "f")
+	// L = d.Mul(f)
+	// L.Label = "L"
+	// L2 := L.Data
+
+	//fmt.Println((L2 - L1) / h)
+
 }

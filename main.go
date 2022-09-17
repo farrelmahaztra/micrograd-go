@@ -6,12 +6,12 @@ import (
 )
 
 type Value struct {
-	Data     float64
-	Grad     float64
-	Label    string
-	Op       Operation
-	Prev     []*Value
-	Backward func()
+	Data      float64
+	Grad      float64
+	Label     string
+	Op        Operation
+	Prev      []*Value
+	_Backward func()
 }
 
 type Operation int64
@@ -30,19 +30,19 @@ const (
 
 func NewValue(data float64, label string) *Value {
 	value := &Value{
-		Data:     data,
-		Grad:     0.0,
-		Label:    label,
-		Op:       Nil,
-		Prev:     nil,
-		Backward: func() {},
+		Data:      data,
+		Grad:      0.0,
+		Label:     label,
+		Op:        Nil,
+		Prev:      nil,
+		_Backward: func() {},
 	}
 
 	return value
 }
 
 func (v Value) Print() {
-	fmt.Printf("Value(data=%f)\n", v.Data)
+	fmt.Printf("Value(data=%f, grad=%f)\n", v.Data, v.Grad)
 }
 
 func (v1 Value) Add(v2 *Value) *Value {
@@ -50,8 +50,8 @@ func (v1 Value) Add(v2 *Value) *Value {
 	out.Op = Add
 	out.Prev = []*Value{&v1, v2}
 
-	out.Backward = func() {
-		v1.Grad += 1.0 * out.Grad
+	out._Backward = func() {
+		(&v1).Grad += 1.0 * out.Grad
 		v2.Grad += 1.0 * out.Grad
 	}
 
@@ -63,8 +63,8 @@ func (v1 Value) Mul(v2 *Value) *Value {
 	out.Op = Mul
 	out.Prev = []*Value{&v1, v2}
 
-	out.Backward = func() {
-		v1.Grad += v2.Data * out.Grad
+	out._Backward = func() {
+		(&v1).Grad += v2.Data * out.Grad
 		v2.Grad += v1.Data * out.Grad
 	}
 
@@ -92,8 +92,8 @@ func (v1 Value) Pow(v2 *Value) *Value {
 	out.Op = Pow
 	out.Prev = []*Value{&v1, v2}
 
-	out.Backward = func() {
-		v1.Grad += (v2.Data * math.Pow(v1.Data, v2.Data-1)) * out.Grad
+	out._Backward = func() {
+		(&v1).Grad += (v2.Data * math.Pow(v1.Data, v2.Data-1)) * out.Grad
 		v2.Grad += (out.Data * math.Log(v1.Data)) * out.Grad
 	}
 
@@ -124,48 +124,47 @@ func (v Value) Exp() *Value {
 	out.Op = Exp
 	out.Prev = []*Value{&v}
 
-	out.Backward = func() {
-		v.Grad += out.Data * out.Grad
+	out._Backward = func() {
+		(&v).Grad += out.Data * out.Grad
 	}
 
 	return out
 }
 
+func (v Value) Backward() {
+	var topo []*Value
+	var visited []*Value
+	var BuildTopo func(v *Value)
+
+	BuildTopo = func(v *Value) {
+		for _, node := range visited {
+			if node == v {
+				return
+			}
+		}
+		visited = append(visited, v)
+		for _, child := range v.Prev {
+			BuildTopo(child)
+		}
+		topo = append(topo, v)
+	}
+
+	BuildTopo(&v)
+
+	for i := len(topo) - 1; i >= 0; i-- {
+		topo[i]._Backward()
+		topo[i].Print()
+	}
+}
+
 func main() {
 	a := NewValue(3, "a")
-	b := NewValue(2, "b")
+	b := NewValue(5, "b")
 	c := a.Add(b)
 	c.Label = "c"
-	c.Grad = 1.0
-	c.Backward()
-	fmt.Println(c.Prev[0].Grad, c.Prev[1].Grad)
-
-	//h := 0.0001
-
-	// a := NewValue(2.0, "a")
-	// b := NewValue(-3.0, "b")
-	// c := NewValue(10.0, "c")
-	// e := a.Mul(b)
-	// e.Label = "e"
-	// d := e.Add(c)
-	// d.Label = "d"
-	// f := NewValue(-2.0, "f")
-	// L := d.Mul(f)
-	// L.Label = "L"
-	// L1 := L.Data
-
-	// a = NewValue(2.0, "a")
-	// b = NewValue(-3.0, "b")
-	// c = NewValue(10.0, "c")
-	// e = a.Mul(b)
-	// e.Label = "e"
-	// d = e.Add(c)
-	// d.Label = "d"
-	// f = NewValue(-2.0, "f")
-	// L = d.Mul(f)
-	// L.Label = "L"
-	// L2 := L.Data
-
-	//fmt.Println((L2 - L1) / h)
-
+	d := NewValue(2, "d")
+	e := c.Mul(d)
+	e.Label = "e"
+	e.Grad = 1.0
+	e.Backward()
 }

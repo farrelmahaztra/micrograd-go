@@ -30,10 +30,20 @@ func (v1 Value) AddValue(v2 *Value) *Value {
 	return out
 }
 
+func (v1 Value) MulValue(v2 *Value) *Value {
+	out := NewValue(v1.Data*v2.Data, "")
+	out.Op = "*"
+	out.Prev = []*Value{&v1, v2}
+
+	return out
+}
+
 func main() {
-	a := NewValue(1.0, "a")
-	b := NewValue(2.0, "b")
-	c := a.AddValue(b)
-	c.Label = "a+b"
-	fmt.Println(c)
+	x1 := NewValue(2.0, "x1")
+	w1 := NewValue(-3.0, "w1")
+
+	x1w1 := x1.MulValue(w1)
+	x1w1.Label = "x1*w1"
+
+	fmt.Println(x1w1)
 }

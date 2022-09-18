@@ -246,6 +246,16 @@ func NewMLP(nin int, nouts []int) *MLP {
 	return mlp
 }
 
+func (mlp MLP) Parameters() [][][]*Value {
+	var params [][][]*Value
+
+	for _, layer := range mlp.Layers {
+		params = append(params, layer.Parameters())
+	}
+
+	return params
+}
+
 func main() {
 	// a := NewValue(3.0, "a")
 	// b := a.Add(a)

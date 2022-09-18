@@ -230,6 +230,22 @@ type MLP struct {
 	Layers []*Layer
 }
 
+func NewMLP(nin int, nouts []int) *MLP {
+	sz := append([]int{nin}, nouts...)
+
+	var layers []*Layer
+
+	for i, _ := range nouts {
+		layers = append(layers, NewLayer(sz[i], sz[i+1]))
+	}
+
+	mlp := &MLP{
+		Layers: layers,
+	}
+
+	return mlp
+}
+
 func main() {
 	// a := NewValue(3.0, "a")
 	// b := a.Add(a)

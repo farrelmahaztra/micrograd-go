@@ -237,11 +237,11 @@ func (l Layer) Call(x []float64) []*Value {
 	return outs
 }
 
-func (l Layer) Parameters() [][]*Value {
-	var params [][]*Value
+func (l Layer) Parameters() []*Value {
+	var params []*Value
 
 	for _, neuron := range l.Neurons {
-		params = append(params, neuron.Parameters())
+		params = append(params, neuron.Parameters()...)
 	}
 
 	return params
@@ -277,50 +277,16 @@ func (mlp MLP) Call(x []float64) *Value {
 	return l[0]
 }
 
-func (mlp MLP) Parameters() [][][]*Value {
-	var params [][][]*Value
+func (mlp MLP) Parameters() []*Value {
+	var params []*Value
 
 	for _, layer := range mlp.Layers {
-		params = append(params, layer.Parameters())
+		params = append(params, layer.Parameters()...)
 	}
 
 	return params
 }
 
 func main() {
-	// a := NewValue(3.0, "a")
-	// b := a.Add(a)
-	// b.Label = "b"
-	// //b.Grad = 1.0
-	// b.Backward()
 
-	// // Inputs x1 and x2
-	// x1 := NewValue(2.0, "x1")
-	// x2 := NewValue(0.0, "x2")
-
-	// // Weights w1 and w2
-	// w1 := NewValue(-3.0, "w1")
-	// w2 := NewValue(1.0, "w2")
-
-	// // Bias of the neuron
-	// b := NewValue(6.8813735870195432, "b")
-
-	// // x1*w1 + x2*w2 + b
-	// x1w1 := x1.Mul(w1)
-	// x1w1.Label = "x1*w1"
-
-	// x2w2 := x2.Mul(w2)
-	// x2w2.Label = "x2*w2"
-
-	// x1w1x2w2 := x1w1.Add(x2w2)
-	// x1w1x2w2.Label = "x1*w1 + x2*w2"
-
-	// n := x1w1x2w2.Add(b)
-	// n.Label = "n"
-
-	// o := n.Tanh()
-	// o.Label = "o"
-	// o.Grad = 1
-
-	// o.Backward()
 }

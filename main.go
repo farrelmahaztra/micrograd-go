@@ -198,7 +198,7 @@ func (n Neuron) Call(x []float64) *Value {
 	act := n.Bias
 
 	for i, _ := range x {
-		act.Add(n.Weights[i].Mul(NewValue(x[i], "")))
+		act = act.Add(n.Weights[i].Mul(NewValue(x[i], "")))
 	}
 
 	out := act.Tanh()

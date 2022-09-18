@@ -160,7 +160,7 @@ func (v Value) Backward() {
 
 	for i := len(topo) - 1; i >= 0; i-- {
 		topo[i]._Backward(topo[i])
-		fmt.Println(topo[i].Data, topo[i].Grad)
+		//fmt.Println(topo[i].Data, topo[i].Grad)
 	}
 }
 
@@ -288,5 +288,53 @@ func (mlp MLP) Parameters() []*Value {
 }
 
 func main() {
+	xs := [][]float64{
+		{2.0, 3.0, -1.0},
+		{3.0, -1.0, 0.5},
+		{0.5, 1.0, 1.0},
+		{1.0, 1.0, -1.0},
+	}
 
+	ys := []float64{1.0, -1.0, -1.0, 1.0}
+
+	n := NewMLP(3, []int{4, 4, 1})
+
+	for i := 0; i < 100; i++ {
+		var ypred []*Value
+		loss := NewValue(0.0, "")
+
+		for _, x := range xs {
+			ypred = append(ypred, n.Call(x))
+		}
+
+		for i, _ := range ypred {
+			ygt := NewValue(ys[i], "")
+			yout := ypred[i]
+
+			loss = loss.Add(
+				yout.Sub(ygt).Pow(
+					NewValue(2, ""),
+				),
+			)
+		}
+
+		for _, p := range n.Parameters() {
+			p.Grad = 0.0
+		}
+
+		loss.Backward()
+
+		for _, p := range n.Parameters() {
+			p.Data += -0.1 * p.Grad
+		}
+
+		fmt.Printf("Step: %d, Loss: %f\n", i, loss.Data)
+
+		if i == 99 {
+			fmt.Println("Final predictions:")
+			for _, pred := range ypred {
+				fmt.Println(pred)
+			}
+		}
+	}
 }

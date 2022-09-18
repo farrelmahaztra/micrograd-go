@@ -194,6 +194,10 @@ func NewNeuron(nin int) *Neuron {
 	return neuron
 }
 
+func (n Neuron) Parameters() []*Value {
+	return append(n.Weights, n.Bias)
+}
+
 type Layer struct {
 	Neurons []*Neuron
 }

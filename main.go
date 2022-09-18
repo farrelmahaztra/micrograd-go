@@ -4,13 +4,10 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
-	"os/exec"
-	"strings"
 	"time"
 )
 
 type Value struct {
-	Id        string
 	Data      float64
 	Grad      float64
 	Label     string
@@ -59,9 +56,7 @@ func (op Operation) String() string {
 }
 
 func NewValue(data float64, label string) *Value {
-	uuid, _ := exec.Command("uuidgen").Output()
 	value := &Value{
-		Id:        string(uuid),
 		Data:      data,
 		Grad:      0.0,
 		Label:     label,
@@ -78,97 +73,98 @@ func (v Value) Print() {
 	fmt.Println("prev=", v.Prev, ")")
 }
 
-func (v1 Value) Add(v2 *Value, label string) *Value {
+func (v1 *Value) Add(v2 *Value, label string) *Value {
 	out := NewValue(v1.Data+v2.Data, label)
 	out.Op = Add
-	out.Prev = []*Value{&v1, v2}
+	out.Prev = []*Value{v1, v2}
 
 	out._Backward = func(out *Value) {
-		(&v1).Grad += 1.0 * out.Grad
+		v1.Grad += 1.0 * out.Grad
 		v2.Grad += 1.0 * out.Grad
 	}
 
 	return out
 }
 
-func (v1 Value) Mul(v2 *Value, label string) *Value {
+func (v1 *Value) Mul(v2 *Value, label string) *Value {
 	out := NewValue(v1.Data*v2.Data, label)
 	out.Op = Mul
-	out.Prev = []*Value{&v1, v2}
+	out.Prev = []*Value{v1, v2}
 
 	out._Backward = func(out *Value) {
-		(&v1).Grad += v2.Data * out.Grad
+		v1.Grad += v2.Data * out.Grad
 		v2.Grad += v1.Data * out.Grad
 	}
 
 	return out
 }
 
-func (v1 Value) Neg(label string) *Value {
+func (v1 *Value) Neg(label string) *Value {
 	v2 := NewValue(-1, "Negate")
 	out := NewValue(v1.Data*v2.Data, label)
 	out.Op = Neg
-	out.Prev = []*Value{&v1, v2}
+	out.Prev = []*Value{v1, v2}
 
 	return out
 }
 
-func (v1 Value) Sub(v2 *Value, label string) *Value {
+func (v1 *Value) Sub(v2 *Value, label string) *Value {
 	out := v1.Add(v2.Neg("Negate for sub"), "Add for sub")
 	out.Op = Sub
 	out.Label = label
+	out.Prev = []*Value{v1, v2}
 
 	return out
 }
 
-func (v1 Value) Pow(v2 float64, label string) *Value {
+func (v1 *Value) Pow(v2 float64, label string) *Value {
 	out := NewValue(float64(math.Pow(v1.Data, v2)), label)
 	out.Op = Pow
-	out.Prev = []*Value{&v1}
+	out.Prev = []*Value{v1}
 
 	out._Backward = func(out *Value) {
-		(&v1).Grad += (v2 * math.Pow(v1.Data, v2-1)) * out.Grad
+		v1.Grad += (v2 * math.Pow(v1.Data, v2-1)) * out.Grad
 	}
 
 	return out
 }
 
-func (v1 Value) Div(v2 *Value, label string) *Value {
+func (v1 *Value) Div(v2 *Value, label string) *Value {
 	out := NewValue(v1.Data*v2.Pow(-1, "Pow for div").Data, label)
 	out.Op = Div
-	out.Prev = []*Value{&v1, v2}
+	out.Prev = []*Value{v1, v2}
 
 	return out
 }
 
-func (v Value) Tanh(label string) *Value {
+func (v *Value) Tanh(label string) *Value {
 	x := v.Data
 	t := (math.Exp(2*x) - 1) / (math.Exp(2*x) + 1)
 	out := NewValue(t, label)
 	out.Op = Tanh
-	out.Prev = []*Value{&v}
+	out.Prev = []*Value{v}
 
 	out._Backward = func(out *Value) {
-		(&v).Grad += (1 - math.Pow(t, 2)) * out.Grad
+		v.Grad += (1 - math.Pow(t, 2)) * out.Grad
 	}
 
 	return out
 }
 
-func (v Value) Exp(label string) *Value {
+func (v *Value) Exp(label string) *Value {
 	x := v.Data
 	out := NewValue(math.Exp(x), label)
 	out.Op = Exp
-	out.Prev = []*Value{&v}
+	out.Prev = []*Value{v}
 
 	out._Backward = func(out *Value) {
-		(&v).Grad += out.Data * out.Grad
+		v.Grad += out.Data * out.Grad
 	}
 
 	return out
 }
 
-func Backward(v *Value, n *MLP) {
+func (v *Value) Backward() {
 	var topo []*Value
 	var visited []*Value
 	var BuildTopo func(v *Value)
@@ -191,17 +187,6 @@ func Backward(v *Value, n *MLP) {
 
 	for i := len(topo) - 1; i >= 0; i-- {
 		topo[i]._Backward(topo[i])
-	}
-
-	// TODO: Fix this hack
-	nParameters := n.Parameters()
-	for _, nParam := range nParameters {
-		for _, node := range topo {
-			if strings.Compare(nParam.Id, node.Id) == 0 {
-				nParam.Grad = node.Grad
-				break
-			}
-		}
 	}
 }
 
@@ -345,7 +330,7 @@ func main() {
 
 	n := NewMLP(3, []int{4, 4, 1})
 
-	for i := 0; i < 30; i++ {
+	for i := 1; i <= 10000; i++ {
 		var ypred []*Value
 		loss := NewValue(0.0, "Initial loss value")
 
@@ -365,7 +350,7 @@ func main() {
 			p.Grad = 0.0
 		}
 
-		Backward(loss, n)
+		loss.Backward()
 
 		for _, p := range n.Parameters() {
 			lr := -0.1
@@ -374,34 +359,11 @@ func main() {
 
 		fmt.Printf("Step: %d, Loss: %f\n", i, loss.Data)
 
-		if i == 29 {
+		if i == 10000 {
 			fmt.Println("Final predictions:")
 			for _, pred := range ypred {
 				pred.Print()
 			}
 		}
 	}
-
-	// // Test basic backward works
-	// x1 := NewValue(2.0, "x1")
-	// x2 := NewValue(0.0, "x2")
-
-	// w1 := NewValue(-3.0, "w1")
-	// w2 := NewValue(1.0, "w2")
-
-	// b := NewValue(6.8813735870195432, "b")
-
-	// x1w1 := x1.Mul(w1, "x1*w1")
-
-	// x2w2 := x2.Mul(w2, "x2*w2")
-
-	// x1w1x2w2 := x1w1.Add(x2w2, "x1*w1 + x2*w2")
-
-	// n := x1w1x2w2.Add(b, "x1*w1 + x2*w2 + b")
-	// n.Label = "n"
-
-	// o := n.Tanh("tanh(x1*w1 + x2*w2 +b)")
-	// o.Label = "o"
-
-	// o.Backward()
 }

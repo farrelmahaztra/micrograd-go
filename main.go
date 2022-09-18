@@ -216,6 +216,16 @@ func NewLayer(nin int, nout int) *Layer {
 	return layer
 }
 
+func (l Layer) Parameters() [][]*Value {
+	var params [][]*Value
+
+	for _, neuron := range l.Neurons {
+		params = append(params, neuron.Parameters())
+	}
+
+	return params
+}
+
 type MLP struct {
 	Layers []*Layer
 }

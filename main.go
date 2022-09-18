@@ -202,6 +202,20 @@ type Layer struct {
 	Neurons []*Neuron
 }
 
+func NewLayer(nin int, nout int) *Layer {
+	var neurons []*Neuron
+
+	for i := 0; i < nout; i++ {
+		neurons = append(neurons, NewNeuron(nin))
+	}
+
+	layer := &Layer{
+		Neurons: neurons,
+	}
+
+	return layer
+}
+
 type MLP struct {
 	Layers []*Layer
 }

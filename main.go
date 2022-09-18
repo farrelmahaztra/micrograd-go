@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"math"
+	"math/rand"
+	"time"
 )
 
 type Value struct {
@@ -139,6 +141,7 @@ func (v Value) Backward() {
 	var topo []*Value
 	var visited []*Value
 	var BuildTopo func(v *Value)
+	v.Grad = 1.0
 
 	BuildTopo = func(v *Value) {
 		for _, node := range visited {
@@ -161,34 +164,78 @@ func (v Value) Backward() {
 	}
 }
 
+func GenerateRandomFloat(min float64, max float64) float64 {
+	rand.Seed(time.Now().UnixNano())
+
+	upper := math.Ceil(min)
+	lower := math.Floor(max)
+	n := rand.Float64()*(upper-lower) + lower
+
+	return n
+}
+
+type Neuron struct {
+	Weights []*Value
+	Bias    *Value
+}
+
+func NewNeuron(nin int) *Neuron {
+	var weights []*Value
+	for i := 0; i < nin; i++ {
+		weights = append(weights, NewValue(GenerateRandomFloat(-1, 1), ""))
+	}
+	bias := NewValue(GenerateRandomFloat(-1, 1), "")
+
+	neuron := &Neuron{
+		Weights: weights,
+		Bias:    bias,
+	}
+
+	return neuron
+}
+
+type Layer struct {
+	Neurons []*Neuron
+}
+
+type MLP struct {
+	Layers []*Layer
+}
+
 func main() {
-	// Inputs x1 and x2
-	x1 := NewValue(2.0, "x1")
-	x2 := NewValue(0.0, "x2")
+	// a := NewValue(3.0, "a")
+	// b := a.Add(a)
+	// b.Label = "b"
+	// //b.Grad = 1.0
+	// b.Backward()
 
-	// Weights w1 and w2
-	w1 := NewValue(-3.0, "w1")
-	w2 := NewValue(1.0, "w2")
+	// // Inputs x1 and x2
+	// x1 := NewValue(2.0, "x1")
+	// x2 := NewValue(0.0, "x2")
 
-	// Bias of the neuron
-	b := NewValue(6.8813735870195432, "b")
+	// // Weights w1 and w2
+	// w1 := NewValue(-3.0, "w1")
+	// w2 := NewValue(1.0, "w2")
 
-	// x1*w1 + x2*w2 + b
-	x1w1 := x1.Mul(w1)
-	x1w1.Label = "x1*w1"
+	// // Bias of the neuron
+	// b := NewValue(6.8813735870195432, "b")
 
-	x2w2 := x2.Mul(w2)
-	x2w2.Label = "x2*w2"
+	// // x1*w1 + x2*w2 + b
+	// x1w1 := x1.Mul(w1)
+	// x1w1.Label = "x1*w1"
 
-	x1w1x2w2 := x1w1.Add(x2w2)
-	x1w1x2w2.Label = "x1*w1 + x2*w2"
+	// x2w2 := x2.Mul(w2)
+	// x2w2.Label = "x2*w2"
 
-	n := x1w1x2w2.Add(b)
-	n.Label = "n"
+	// x1w1x2w2 := x1w1.Add(x2w2)
+	// x1w1x2w2.Label = "x1*w1 + x2*w2"
 
-	o := n.Tanh()
-	o.Label = "o"
-	o.Grad = 1
+	// n := x1w1x2w2.Add(b)
+	// n.Label = "n"
 
-	o.Backward()
+	// o := n.Tanh()
+	// o.Label = "o"
+	// o.Grad = 1
+
+	// o.Backward()
 }

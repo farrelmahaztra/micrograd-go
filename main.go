@@ -30,6 +30,31 @@ const (
 	Exp
 )
 
+func (op Operation) String() string {
+	switch op {
+	case Nil:
+		return "No operation"
+	case Add:
+		return "Add"
+	case Mul:
+		return "Mul"
+	case Neg:
+		return "Neg"
+	case Sub:
+		return "Sub"
+	case Pow:
+		return "Pow"
+	case Div:
+		return "Div"
+	case Tanh:
+		return "Tanh"
+	case Exp:
+		return "Exp"
+	}
+
+	return "N/A"
+}
+
 func NewValue(data float64, label string) *Value {
 	value := &Value{
 		Data:      data,
@@ -44,7 +69,8 @@ func NewValue(data float64, label string) *Value {
 }
 
 func (v Value) Print() {
-	fmt.Printf("Value(data=%f, grad=%f)\n", v.Data, v.Grad)
+	fmt.Printf("( data=%f, grad=%f, op=%s, ", v.Data, v.Grad, v.Op.String())
+	fmt.Println("prev=", v.Prev, ")")
 }
 
 func (v1 Value) Add(v2 *Value) *Value {
@@ -160,7 +186,8 @@ func (v Value) Backward() {
 	fmt.Println("Length of topo", len(topo))
 	for i := len(topo) - 1; i >= 0; i-- {
 		topo[i]._Backward(topo[i])
-		//fmt.Println(topo[i].Data, topo[i].Grad)
+		fmt.Printf("%p ", topo[i])
+		topo[i].Print()
 	}
 }
 
@@ -312,7 +339,7 @@ func main() {
 			yout := ypred[i]
 
 			loss = loss.Add(
-				yout.Sub(ygt).Pow(2),
+				(yout.Sub(ygt)).Pow(2),
 			)
 		}
 

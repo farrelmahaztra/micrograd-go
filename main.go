@@ -89,21 +89,20 @@ func (v1 Value) Sub(v2 *Value) *Value {
 	return out
 }
 
-func (v1 Value) Pow(v2 *Value) *Value {
-	out := NewValue(float64(math.Pow(v1.Data, v2.Data)), "")
+func (v1 Value) Pow(v2 float64) *Value {
+	out := NewValue(float64(math.Pow(v1.Data, v2)), "")
 	out.Op = Pow
-	out.Prev = []*Value{&v1, v2}
+	out.Prev = []*Value{&v1}
 
 	out._Backward = func(out *Value) {
-		(&v1).Grad += (v2.Data * math.Pow(v1.Data, v2.Data-1)) * out.Grad
-		v2.Grad += (out.Data * math.Log(v1.Data)) * out.Grad
+		(&v1).Grad += (v2 * math.Pow(v1.Data, v2-1)) * out.Grad
 	}
 
 	return out
 }
 
 func (v1 Value) Div(v2 *Value) *Value {
-	out := NewValue(v1.Data*v2.Pow(NewValue(-1, "")).Data, "")
+	out := NewValue(v1.Data*v2.Pow(-1).Data, "")
 	out.Op = Div
 	out.Prev = []*Value{&v1, v2}
 
@@ -158,6 +157,7 @@ func (v Value) Backward() {
 
 	BuildTopo(&v)
 
+	fmt.Println("Length of topo", len(topo))
 	for i := len(topo) - 1; i >= 0; i-- {
 		topo[i]._Backward(topo[i])
 		//fmt.Println(topo[i].Data, topo[i].Grad)
@@ -299,7 +299,7 @@ func main() {
 
 	n := NewMLP(3, []int{4, 4, 1})
 
-	for i := 0; i < 100; i++ {
+	for i := 0; i < 1; i++ {
 		var ypred []*Value
 		loss := NewValue(0.0, "")
 
@@ -312,9 +312,7 @@ func main() {
 			yout := ypred[i]
 
 			loss = loss.Add(
-				yout.Sub(ygt).Pow(
-					NewValue(2, ""),
-				),
+				yout.Sub(ygt).Pow(2),
 			)
 		}
 
@@ -322,9 +320,11 @@ func main() {
 			p.Grad = 0.0
 		}
 
+		loss.Grad = 1.0
 		loss.Backward()
 
 		for _, p := range n.Parameters() {
+			//fmt.Println(i, p.Data, p.Grad)
 			p.Data += -0.1 * p.Grad
 		}
 

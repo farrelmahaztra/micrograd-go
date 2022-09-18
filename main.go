@@ -267,6 +267,16 @@ func NewMLP(nin int, nouts []int) *MLP {
 	return mlp
 }
 
+func (mlp MLP) Call(x []float64) *Value {
+	var l []*Value
+
+	for _, layer := range mlp.Layers {
+		l = layer.Call(x)
+	}
+
+	return l[0]
+}
+
 func (mlp MLP) Parameters() [][][]*Value {
 	var params [][][]*Value
 

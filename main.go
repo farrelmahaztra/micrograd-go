@@ -73,8 +73,8 @@ func (v Value) Print() {
 	fmt.Println("prev=", v.Prev, ")")
 }
 
-func (v1 Value) Add(v2 *Value) *Value {
-	out := NewValue(v1.Data+v2.Data, "")
+func (v1 Value) Add(v2 *Value, label string) *Value {
+	out := NewValue(v1.Data+v2.Data, label)
 	out.Op = Add
 	out.Prev = []*Value{&v1, v2}
 
@@ -86,8 +86,8 @@ func (v1 Value) Add(v2 *Value) *Value {
 	return out
 }
 
-func (v1 Value) Mul(v2 *Value) *Value {
-	out := NewValue(v1.Data*v2.Data, "")
+func (v1 Value) Mul(v2 *Value, label string) *Value {
+	out := NewValue(v1.Data*v2.Data, label)
 	out.Op = Mul
 	out.Prev = []*Value{&v1, v2}
 
@@ -99,24 +99,25 @@ func (v1 Value) Mul(v2 *Value) *Value {
 	return out
 }
 
-func (v1 Value) Neg() *Value {
-	v2 := NewValue(-1, "")
-	out := NewValue(v1.Data*v2.Data, "")
+func (v1 Value) Neg(label string) *Value {
+	v2 := NewValue(-1, "Negate")
+	out := NewValue(v1.Data*v2.Data, label)
 	out.Op = Neg
 	out.Prev = []*Value{&v1, v2}
 
 	return out
 }
 
-func (v1 Value) Sub(v2 *Value) *Value {
-	out := v1.Add(v2.Neg())
+func (v1 Value) Sub(v2 *Value, label string) *Value {
+	out := v1.Add(v2.Neg("Negate for sub"), "Add for sub")
 	out.Op = Sub
+	out.Label = label
 
 	return out
 }
 
-func (v1 Value) Pow(v2 float64) *Value {
-	out := NewValue(float64(math.Pow(v1.Data, v2)), "")
+func (v1 Value) Pow(v2 float64, label string) *Value {
+	out := NewValue(float64(math.Pow(v1.Data, v2)), label)
 	out.Op = Pow
 	out.Prev = []*Value{&v1}
 
@@ -127,18 +128,18 @@ func (v1 Value) Pow(v2 float64) *Value {
 	return out
 }
 
-func (v1 Value) Div(v2 *Value) *Value {
-	out := NewValue(v1.Data*v2.Pow(-1).Data, "")
+func (v1 Value) Div(v2 *Value, label string) *Value {
+	out := NewValue(v1.Data*v2.Pow(-1, "Pow for div").Data, label)
 	out.Op = Div
 	out.Prev = []*Value{&v1, v2}
 
 	return out
 }
 
-func (v Value) Tanh() *Value {
+func (v Value) Tanh(label string) *Value {
 	x := v.Data
 	t := (math.Exp(2*x) - 1) / (math.Exp(2*x) + 1)
-	out := NewValue(t, "")
+	out := NewValue(t, label)
 	out.Op = Tanh
 	out.Prev = []*Value{&v}
 
@@ -149,9 +150,9 @@ func (v Value) Tanh() *Value {
 	return out
 }
 
-func (v Value) Exp() *Value {
+func (v Value) Exp(label string) *Value {
 	x := v.Data
-	out := NewValue(math.Exp(x), "")
+	out := NewValue(math.Exp(x), label)
 	out.Op = Exp
 	out.Prev = []*Value{&v}
 
@@ -183,11 +184,8 @@ func (v Value) Backward() {
 
 	BuildTopo(&v)
 
-	fmt.Println("Length of topo", len(topo))
 	for i := len(topo) - 1; i >= 0; i-- {
 		topo[i]._Backward(topo[i])
-		fmt.Printf("%p ", topo[i])
-		topo[i].Print()
 	}
 }
 
@@ -209,9 +207,9 @@ type Neuron struct {
 func NewNeuron(nin int) *Neuron {
 	var weights []*Value
 	for i := 0; i < nin; i++ {
-		weights = append(weights, NewValue(GenerateRandomFloat(-1, 1), ""))
+		weights = append(weights, NewValue(GenerateRandomFloat(-1, 1), "weight"))
 	}
-	bias := NewValue(GenerateRandomFloat(-1, 1), "")
+	bias := NewValue(GenerateRandomFloat(-1, 1), "bias")
 
 	neuron := &Neuron{
 		Weights: weights,
@@ -221,14 +219,14 @@ func NewNeuron(nin int) *Neuron {
 	return neuron
 }
 
-func (n Neuron) Call(x []float64) *Value {
+func (n Neuron) Call(x []*Value) *Value {
 	act := n.Bias
 
 	for i, _ := range x {
-		act = act.Add(n.Weights[i].Mul(NewValue(x[i], "")))
+		act = act.Add(n.Weights[i].Mul(x[i], "xi*wi"), "xi*wi+b")
 	}
 
-	out := act.Tanh()
+	out := act.Tanh("tanh(wi*xi+b)")
 	return out
 }
 
@@ -254,7 +252,7 @@ func NewLayer(nin int, nout int) *Layer {
 	return layer
 }
 
-func (l Layer) Call(x []float64) []*Value {
+func (l Layer) Call(x []*Value) []*Value {
 	var outs []*Value
 
 	for _, n := range l.Neurons {
@@ -297,8 +295,12 @@ func NewMLP(nin int, nouts []int) *MLP {
 func (mlp MLP) Call(x []float64) *Value {
 	var l []*Value
 
+	for _, el := range x {
+		l = append(l, NewValue(el, ""))
+	}
+
 	for _, layer := range mlp.Layers {
-		l = layer.Call(x)
+		l = layer.Call(l)
 	}
 
 	return l[0]
@@ -328,19 +330,18 @@ func main() {
 
 	for i := 0; i < 1; i++ {
 		var ypred []*Value
-		loss := NewValue(0.0, "")
+		loss := NewValue(0.0, "Initial loss value")
 
 		for _, x := range xs {
 			ypred = append(ypred, n.Call(x))
 		}
 
 		for i, _ := range ypred {
-			ygt := NewValue(ys[i], "")
+			ygt := NewValue(ys[i], "ygt")
 			yout := ypred[i]
 
 			loss = loss.Add(
-				(yout.Sub(ygt)).Pow(2),
-			)
+				(yout.Sub(ygt, "yout-ygt")).Pow(2, "Pow for mse"), "Add to loss")
 		}
 
 		for _, p := range n.Parameters() {
@@ -351,7 +352,6 @@ func main() {
 		loss.Backward()
 
 		for _, p := range n.Parameters() {
-			//fmt.Println(i, p.Data, p.Grad)
 			p.Data += -0.1 * p.Grad
 		}
 

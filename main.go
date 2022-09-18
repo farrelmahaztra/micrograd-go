@@ -194,6 +194,17 @@ func NewNeuron(nin int) *Neuron {
 	return neuron
 }
 
+func (n Neuron) Call(x []float64) *Value {
+	act := n.Bias
+
+	for i, _ := range x {
+		act.Add(n.Weights[i].Mul(NewValue(x[i], "")))
+	}
+
+	out := act.Tanh()
+	return out
+}
+
 func (n Neuron) Parameters() []*Value {
 	return append(n.Weights, n.Bias)
 }

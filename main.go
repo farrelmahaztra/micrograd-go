@@ -227,6 +227,16 @@ func NewLayer(nin int, nout int) *Layer {
 	return layer
 }
 
+func (l Layer) Call(x []float64) []*Value {
+	var outs []*Value
+
+	for _, n := range l.Neurons {
+		outs = append(outs, n.Call(x))
+	}
+
+	return outs
+}
+
 func (l Layer) Parameters() [][]*Value {
 	var params [][]*Value
 

@@ -4,10 +4,13 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
+	"os/exec"
+	"strings"
 	"time"
 )
 
 type Value struct {
+	Id        string
 	Data      float64
 	Grad      float64
 	Label     string
@@ -56,7 +59,9 @@ func (op Operation) String() string {
 }
 
 func NewValue(data float64, label string) *Value {
+	uuid, _ := exec.Command("uuidgen").Output()
 	value := &Value{
+		Id:        string(uuid),
 		Data:      data,
 		Grad:      0.0,
 		Label:     label,
@@ -163,7 +168,7 @@ func (v Value) Exp(label string) *Value {
 	return out
 }
 
-func (v Value) Backward() {
+func Backward(v *Value, n *MLP) {
 	var topo []*Value
 	var visited []*Value
 	var BuildTopo func(v *Value)
@@ -182,10 +187,21 @@ func (v Value) Backward() {
 		topo = append(topo, v)
 	}
 
-	BuildTopo(&v)
+	BuildTopo(v)
 
 	for i := len(topo) - 1; i >= 0; i-- {
 		topo[i]._Backward(topo[i])
+	}
+
+	// TODO: Fix this hack
+	nParameters := n.Parameters()
+	for _, nParam := range nParameters {
+		for _, node := range topo {
+			if strings.Compare(nParam.Id, node.Id) == 0 {
+				nParam.Grad = node.Grad
+				break
+			}
+		}
 	}
 }
 
@@ -317,6 +333,7 @@ func (mlp MLP) Parameters() []*Value {
 }
 
 func main() {
+	// Training loop
 	xs := [][]float64{
 		{2.0, 3.0, -1.0},
 		{3.0, -1.0, 0.5},
@@ -328,7 +345,7 @@ func main() {
 
 	n := NewMLP(3, []int{4, 4, 1})
 
-	for i := 0; i < 1; i++ {
+	for i := 0; i < 30; i++ {
 		var ypred []*Value
 		loss := NewValue(0.0, "Initial loss value")
 
@@ -348,20 +365,43 @@ func main() {
 			p.Grad = 0.0
 		}
 
-		loss.Grad = 1.0
-		loss.Backward()
+		Backward(loss, n)
 
 		for _, p := range n.Parameters() {
-			p.Data += -0.1 * p.Grad
+			lr := -0.1
+			p.Data += p.Grad * lr
 		}
 
 		fmt.Printf("Step: %d, Loss: %f\n", i, loss.Data)
 
-		if i == 99 {
+		if i == 29 {
 			fmt.Println("Final predictions:")
 			for _, pred := range ypred {
-				fmt.Println(pred)
+				pred.Print()
 			}
 		}
 	}
+
+	// // Test basic backward works
+	// x1 := NewValue(2.0, "x1")
+	// x2 := NewValue(0.0, "x2")
+
+	// w1 := NewValue(-3.0, "w1")
+	// w2 := NewValue(1.0, "w2")
+
+	// b := NewValue(6.8813735870195432, "b")
+
+	// x1w1 := x1.Mul(w1, "x1*w1")
+
+	// x2w2 := x2.Mul(w2, "x2*w2")
+
+	// x1w1x2w2 := x1w1.Add(x2w2, "x1*w1 + x2*w2")
+
+	// n := x1w1x2w2.Add(b, "x1*w1 + x2*w2 + b")
+	// n.Label = "n"
+
+	// o := n.Tanh("tanh(x1*w1 + x2*w2 +b)")
+	// o.Label = "o"
+
+	// o.Backward()
 }

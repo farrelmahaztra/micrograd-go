@@ -26,9 +26,9 @@ type Neuron struct {
 func NewNeuron(nin int) *Neuron {
 	var weights []*engine.Value
 	for i := 0; i < nin; i++ {
-		weights = append(weights, engine.NewValue(GenerateRandomFloat(-1, 1), "weight"))
+		weights = append(weights, engine.NewValue(GenerateRandomFloat(-1, 1)))
 	}
-	bias := engine.NewValue(GenerateRandomFloat(-1, 1), "bias")
+	bias := engine.NewValue(GenerateRandomFloat(-1, 1))
 
 	neuron := &Neuron{
 		Weights: weights,
@@ -42,10 +42,10 @@ func (n Neuron) Call(x []*engine.Value) *engine.Value {
 	act := n.Bias
 
 	for i, _ := range x {
-		act = act.Add(n.Weights[i].Mul(x[i], "xi*wi"), "xi*wi+b")
+		act = act.Add(n.Weights[i].Mul(x[i]))
 	}
 
-	out := act.Tanh("tanh(wi*xi+b)")
+	out := act.Tanh()
 	return out
 }
 
@@ -115,7 +115,7 @@ func (mlp MLP) Call(x []float64) *engine.Value {
 	var l []*engine.Value
 
 	for _, el := range x {
-		l = append(l, engine.NewValue(el, ""))
+		l = append(l, engine.NewValue(el))
 	}
 
 	for _, layer := range mlp.Layers {

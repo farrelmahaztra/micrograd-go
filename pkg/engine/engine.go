@@ -53,11 +53,11 @@ func (op Operation) String() string {
 	return "N/A"
 }
 
-func NewValue(data float64, label string) *Value {
+func NewValue(data float64) *Value {
 	value := &Value{
 		Data:      data,
 		Grad:      0.0,
-		Label:     label,
+		Label:     "",
 		Op:        Nil,
 		Prev:      nil,
 		_Backward: func(out *Value) {},
@@ -71,8 +71,8 @@ func (v Value) Print() {
 	fmt.Println("prev=", v.Prev, ")")
 }
 
-func (v1 *Value) Add(v2 *Value, label string) *Value {
-	out := NewValue(v1.Data+v2.Data, label)
+func (v1 *Value) Add(v2 *Value) *Value {
+	out := NewValue(v1.Data + v2.Data)
 	out.Op = Add
 	out.Prev = []*Value{v1, v2}
 
@@ -84,8 +84,8 @@ func (v1 *Value) Add(v2 *Value, label string) *Value {
 	return out
 }
 
-func (v1 *Value) Mul(v2 *Value, label string) *Value {
-	out := NewValue(v1.Data*v2.Data, label)
+func (v1 *Value) Mul(v2 *Value) *Value {
+	out := NewValue(v1.Data * v2.Data)
 	out.Op = Mul
 	out.Prev = []*Value{v1, v2}
 
@@ -97,26 +97,25 @@ func (v1 *Value) Mul(v2 *Value, label string) *Value {
 	return out
 }
 
-func (v1 *Value) Neg(label string) *Value {
-	v2 := NewValue(-1, "Negate")
-	out := NewValue(v1.Data*v2.Data, label)
+func (v1 *Value) Neg() *Value {
+	v2 := NewValue(-1)
+	out := NewValue(v1.Data * v2.Data)
 	out.Op = Neg
 	out.Prev = []*Value{v1, v2}
 
 	return out
 }
 
-func (v1 *Value) Sub(v2 *Value, label string) *Value {
-	out := v1.Add(v2.Neg("Negate for sub"), "Add for sub")
+func (v1 *Value) Sub(v2 *Value) *Value {
+	out := v1.Add(v2.Neg())
 	out.Op = Sub
-	out.Label = label
 	out.Prev = []*Value{v1, v2}
 
 	return out
 }
 
-func (v1 *Value) Pow(v2 float64, label string) *Value {
-	out := NewValue(float64(math.Pow(v1.Data, v2)), label)
+func (v1 *Value) Pow(v2 float64) *Value {
+	out := NewValue(float64(math.Pow(v1.Data, v2)))
 	out.Op = Pow
 	out.Prev = []*Value{v1}
 
@@ -127,18 +126,18 @@ func (v1 *Value) Pow(v2 float64, label string) *Value {
 	return out
 }
 
-func (v1 *Value) Div(v2 *Value, label string) *Value {
-	out := NewValue(v1.Data*v2.Pow(-1, "Pow for div").Data, label)
+func (v1 *Value) Div(v2 *Value) *Value {
+	out := NewValue(v1.Data * v2.Pow(-1).Data)
 	out.Op = Div
 	out.Prev = []*Value{v1, v2}
 
 	return out
 }
 
-func (v *Value) Tanh(label string) *Value {
+func (v *Value) Tanh() *Value {
 	x := v.Data
 	t := (math.Exp(2*x) - 1) / (math.Exp(2*x) + 1)
-	out := NewValue(t, label)
+	out := NewValue(t)
 	out.Op = Tanh
 	out.Prev = []*Value{v}
 
@@ -149,9 +148,9 @@ func (v *Value) Tanh(label string) *Value {
 	return out
 }
 
-func (v *Value) Exp(label string) *Value {
+func (v *Value) Exp() *Value {
 	x := v.Data
-	out := NewValue(math.Exp(x), label)
+	out := NewValue(math.Exp(x))
 	out.Op = Exp
 	out.Prev = []*Value{v}
 

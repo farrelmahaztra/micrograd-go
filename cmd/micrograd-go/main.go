@@ -22,18 +22,18 @@ func main() {
 
 	for i := 1; i <= 10000; i++ {
 		var ypred []*engine.Value
-		loss := engine.NewValue(0.0, "Initial loss value")
+		loss := engine.NewValue(0.0)
 
 		for _, x := range xs {
 			ypred = append(ypred, n.Call(x))
 		}
 
 		for i, _ := range ypred {
-			ygt := engine.NewValue(ys[i], "ygt")
+			ygt := engine.NewValue(ys[i])
 			yout := ypred[i]
 
 			loss = loss.Add(
-				(yout.Sub(ygt, "yout-ygt")).Pow(2, "Pow for mse"), "Add to loss")
+				(yout.Sub(ygt)).Pow(2))
 		}
 
 		for _, p := range n.Parameters() {
